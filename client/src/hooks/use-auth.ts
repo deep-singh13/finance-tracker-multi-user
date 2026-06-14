@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 const AUTH_KEY = ["/api/auth/me"];
 
@@ -36,14 +36,15 @@ export function useAuth() {
 }
 
 export function useLogout() {
-  const qc = useQueryClient();
   return async () => {
-    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-    // Drop all cached per-user data, then synchronously write the logged-out auth
-    // state. setQueryData notifies the mounted useAuth observer immediately, so the
-    // AuthGuard re-renders to the login screen without a manual refresh. (clear() +
-    // invalidate left the observer showing its last authenticated snapshot.)
-    qc.clear();
-    qc.setQueryData<AuthState>(AUTH_KEY, { authenticated: false, username: null, role: null, needsBootstrap: false });
+    try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    } finally {
+      // Hard redirect to the root: the app reboots, /api/auth/me returns 401, and
+      // the login screen shows. This is bulletproof — it doesn't depend on React
+      // Query re-notifying the mounted auth observer — and it wipes all in-memory
+      // per-user state for free.
+      window.location.href = "/";
+    }
   };
 }
