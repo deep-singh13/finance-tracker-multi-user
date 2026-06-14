@@ -1,0 +1,189 @@
+You are working on an existing expense tracker web app. The app already has:
+
+* Expense creation with amount, category, note, and date
+* Category breakdown donut chart
+* Today / Week / Month summary cards
+* Expense list UI with clean dark theme
+* Data persistence already working
+
+Your task is to extend the existing app WITHOUT breaking current functionality or UI design.
+
+Implement the following features:
+
+---
+
+FEATURE 1 — Edit Expense
+
+Requirements:
+
+* User must be able to click/tap an expense card to edit it
+* Open the same modal used for creating expenses
+* Pre-fill all fields:
+
+  * amount
+  * category
+  * note
+  * date
+* When saving, update the existing expense instead of creating a new one
+* Update:
+
+  * expense list
+  * category chart
+  * summary cards
+* Do not reload the entire page — update dynamically
+
+Add:
+
+* editExpense(id)
+* updateExpense(id, updatedData)
+
+---
+
+FEATURE 2 — Monthly Insights Section
+
+Add a new card below the category breakdown chart called "Monthly Insights"
+
+Display:
+
+* Total spent this month
+* Highest spending category with amount
+* Daily average spending this month
+
+Example format:
+
+Monthly Insights
+Total: $12450
+Top Category: Food ($6200)
+Daily Avg: $415
+
+Update automatically when expenses change.
+
+Add function:
+
+calculateMonthlyInsights(expenses)
+
+---
+
+FEATURE 3 — Budget Tracking
+
+Add ability to set a monthly budget.
+
+Requirements:
+
+* Store budget value persistently
+* Show budget card:
+
+Monthly Budget
+Budget: $15000
+Spent: $12450
+Remaining: $2550
+
+Optional: show progress bar
+
+Add functions:
+
+setMonthlyBudget(amount)
+getMonthlyBudget()
+calculateRemainingBudget()
+
+---
+
+FEATURE 5 — Weekly and Monthly Spending Charts
+
+Add a new section called "Spending Trends"
+
+Create:
+
+* weekly bar chart
+* monthly bar chart
+
+Use Chart.js (via CDN)
+
+Group expenses by date and calculate totals.
+
+Functions needed:
+
+calculateWeeklyTotals(expenses)
+calculateMonthlyTotals(expenses)
+
+Charts must auto update.
+
+---
+
+FEATURE 6 — Duplicate Expense
+
+Add duplicate button/icon on each expense card.
+
+When clicked:
+
+* create new expense with same:
+
+  * amount
+  * category
+  * note
+* set date = today
+* update UI and charts instantly
+
+Function:
+
+duplicateExpense(id)
+
+---
+
+FEATURE 7 — Export CSV
+
+Add button called "Export CSV"
+
+When clicked:
+
+* export all expenses to CSV file
+* include columns:
+
+date, amount, category, note
+
+Trigger file download automatically.
+
+Function:
+
+exportExpensesToCSV()
+
+---
+
+FEATURE 9 — Search Expenses
+
+Add search bar at top of expense list.
+
+Requirements:
+
+* Filter expenses by:
+
+  * note text
+  * category
+* Update results in real time as user types
+
+Function:
+
+searchExpenses(query)
+
+---
+
+Technical requirements:
+
+* DO NOT rewrite entire app
+* Extend existing functions
+* Keep current dark theme and UI
+* Use modular functions
+* Use efficient DOM updates (no full page reload)
+* Use clean, readable code
+* Ensure compatibility with Replit free tier
+
+If needed, create separate files:
+
+budget.js
+charts.js
+search.js
+export.js
+
+But keep architecture simple.
+
+Ensure all features integrate smoothly with existing expense storage system.

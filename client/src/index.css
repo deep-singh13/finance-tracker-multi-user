@@ -1,0 +1,296 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Custom easing curves (Emil: never use browser defaults) ── */
+:root {
+  --ease-out:     cubic-bezier(0.23, 1, 0.32, 1);       /* snappy, responsive */
+  --ease-in-out:  cubic-bezier(0.77, 0, 0.175, 1);      /* on-screen movement */
+  --ease-spring:  cubic-bezier(0.34, 1.56, 0.64, 1);    /* subtle bounce for active states */
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15%       { transform: translateX(-8px); }
+  30%       { transform: translateX(8px); }
+  45%       { transform: translateX(-6px); }
+  60%       { transform: translateX(6px); }
+  75%       { transform: translateX(-3px); }
+  90%       { transform: translateX(3px); }
+}
+
+@keyframes caret-blink {
+  0%, 70%, 100% { opacity: 1; }
+  20%, 50%      { opacity: 0; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* ── Stagger fade-up for list items ── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.stagger-item {
+  opacity: 0;
+  animation: fade-up 240ms var(--ease-out) forwards;
+}
+.stagger-item:nth-child(1)  { animation-delay: 0ms;   }
+.stagger-item:nth-child(2)  { animation-delay: 40ms;  }
+.stagger-item:nth-child(3)  { animation-delay: 80ms;  }
+.stagger-item:nth-child(4)  { animation-delay: 120ms; }
+.stagger-item:nth-child(5)  { animation-delay: 160ms; }
+.stagger-item:nth-child(6)  { animation-delay: 200ms; }
+.stagger-item:nth-child(7)  { animation-delay: 230ms; }
+.stagger-item:nth-child(8)  { animation-delay: 260ms; }
+.stagger-item:nth-child(n+9){ animation-delay: 280ms; }
+
+/* ── Icon button — press feedback ── */
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: background-color 150ms var(--ease-out),
+              transform 120ms var(--ease-out);
+}
+.icon-btn:active {
+  transform: scale(0.93);
+}
+
+/* ── Pressable rows (list items) ── */
+.pressable {
+  transition: background-color 150ms var(--ease-out),
+              transform 120ms var(--ease-out);
+}
+.pressable:active {
+  transform: scale(0.99);
+}
+
+@layer base {
+  :root {
+    --font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+
+    /* ── Premium Light Mode — Navy + Indigo system ── */
+    --background: 220 30% 96%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 217 91% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 93%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 220 14% 91%;
+    --muted-foreground: 220 9% 42%;
+
+    --accent: 43 96% 48%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84% 58%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 87%;
+    --input: 220 13% 87%;
+    --ring: 217 91% 50%;
+
+    --radius: 1rem;
+  }
+
+  .dark {
+    /* ── OLED Premium Dark — Deep Navy system ── */
+    --background: 222 47% 4%;
+    --foreground: 210 40% 96%;
+
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 96%;
+
+    --popover: 222 38% 10%;
+    --popover-foreground: 210 40% 96%;
+
+    --primary: 217 91% 58%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 222 32% 14%;
+    --secondary-foreground: 210 40% 96%;
+
+    --muted: 222 32% 12%;
+    --muted-foreground: 215 20% 52%;
+
+    --accent: 43 96% 48%;
+    --accent-foreground: 222 47% 6%;
+
+    --destructive: 0 84% 58%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 222 32% 16%;
+    --input: 222 32% 16%;
+    --ring: 217 91% 58%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* IBM Plex Sans has full tnum tables — use them everywhere.
+       Every currency amount, percentage, date, and digit in the app
+       gets fixed-width rendering with no JSX changes. */
+    font-variant-numeric: tabular-nums;
+    font-kerning: normal;
+  }
+
+  h1 { @apply text-[32px] font-bold tracking-tight leading-none; }
+  h2 { @apply text-2xl font-semibold tracking-tight; }
+  h3 { @apply text-lg font-semibold tracking-tight; }
+}
+
+@layer components {
+  /* ── Glass card ── */
+  .glass-card {
+    @apply rounded-2xl border border-white/10 shadow-lg;
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  :root:not(.dark) .glass-card {
+    background: rgba(255, 255, 255, 0.75);
+    border-color: rgba(0, 0, 0, 0.07);
+  }
+
+  /* ── Hero gradient ── */
+  .hero-gradient {
+    background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 55%, #1D4ED8 100%);
+  }
+  .dark .hero-gradient {
+    background: linear-gradient(135deg, #060B14 0%, #0F172A 50%, #1E3A8A 100%);
+  }
+
+  /* ── Gold shimmer text ── */
+  .gold-text {
+    background: linear-gradient(90deg, #EAA10A, #F5C842, #EAA10A);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 3s linear infinite;
+  }
+
+  /* ── Glassmorphic tab bar ── */
+  .tab-bar-glass {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+  }
+  .dark .tab-bar-glass {
+    background: rgba(9, 16, 30, 0.88);
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  /* ── iOS list ── */
+  .ios-list {
+    @apply bg-card rounded-2xl overflow-hidden shadow-sm shadow-black/5 border border-border/50;
+  }
+
+  /* Only hover on pointer devices — prevents touch false positives.
+     --row-tint can be set per-row to apply a category or semantic surface tint;
+     falls back to the card surface so rows without a tint look normal. */
+  .ios-list-item {
+    @apply flex items-center justify-between px-4 py-3 cursor-pointer;
+    background-color: var(--row-tint, hsl(var(--card)));
+    transition: background-color 150ms var(--ease-out), transform 120ms var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .ios-list-item:hover { background-color: hsl(var(--muted) / 0.5); }
+  }
+  .ios-list-item:active {
+    transform: scale(0.99);
+  }
+
+  .ios-list-item:not(:last-child) > .ios-list-content {
+    @apply border-b border-border;
+  }
+  .ios-list-content {
+    @apply flex-1 flex items-center justify-between py-1 ml-3;
+  }
+
+  /* ── Remove number input spinners ── */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] { -moz-appearance: textfield; }
+
+  /* ── Section label ── */
+  .section-label {
+    @apply text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground;
+  }
+
+  /* ── Badges ── */
+  .badge-positive {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold
+           bg-emerald-500/12 text-emerald-600 dark:text-emerald-400;
+  }
+  .badge-negative {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold
+           bg-red-500/12 text-red-600 dark:text-red-400;
+  }
+}
+
+/* ── Privacy toggle: blur-reveal ── */
+@keyframes blur-reveal {
+  from { filter: blur(10px); opacity: 0; transform: scale(0.97); }
+  to   { filter: blur(0); opacity: 1; transform: scale(1); }
+}
+.blur-reveal {
+  animation: blur-reveal 220ms var(--ease-out) forwards;
+}
+
+/* ── Delete row exit ── */
+@keyframes row-exit {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(14px); }
+}
+.row-exiting {
+  animation: row-exit 260ms var(--ease-out) forwards;
+  pointer-events: none;
+}
+
+/* ── prefers-reduced-motion — remove position animations, keep opacity ── */
+@media (prefers-reduced-motion: reduce) {
+  .stagger-item {
+    animation: fade-in-only 200ms ease forwards;
+  }
+  @keyframes fade-in-only {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .icon-btn:active,
+  .pressable:active,
+  .ios-list-item:active {
+    transform: none;
+  }
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
