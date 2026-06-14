@@ -6,7 +6,9 @@ product
 
 ## Users
 
-Single user. Someone who wants full, private control over their personal finances without trusting a third-party app with bank credentials. Uses it on mobile daily and desktop occasionally. Already in a financial mindset when they open it — not browsing, not exploring. Here to log something, check a number, or review a period. Every interaction should feel fast and deliberate.
+Multiple users, each with their own private account and fully isolated data. A user wants full, private control over their personal finances without trusting a third-party app with bank credentials. Uses it on mobile daily and desktop occasionally. Already in a financial mindset when they open it — not browsing, not exploring. Here to log something, check a number, or review a period. Every interaction should feel fast and deliberate.
+
+An **admin** (the first registered user) additionally manages accounts: creating users, resetting passwords, promoting/demoting admins, and removing accounts. Admins do not see other users' financial data — management is limited to the accounts themselves plus aggregate counts.
 
 ## Product Purpose
 
