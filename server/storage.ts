@@ -5,7 +5,7 @@ import {
   type Budget, type InsertBudget, type Investment, type InsertInvestment,
   type Subscription, type InsertSubscription, type Income, type InsertIncome,
 } from "@shared/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 
 export class DatabaseStorage {
   // ── Expenses ──
@@ -93,9 +93,9 @@ export class DatabaseStorage {
 
   // ── Admin stats: per-user transaction counts ──
   async transactionCounts(userId: number): Promise<{ expenses: number; income: number }> {
-    const exp = await db.select().from(expenses).where(eq(expenses.userId, userId));
-    const inc = await db.select().from(income).where(eq(income.userId, userId));
-    return { expenses: exp.length, income: inc.length };
+    const [exp] = await db.select({ n: sql<number>`count(*)::int` }).from(expenses).where(eq(expenses.userId, userId));
+    const [inc] = await db.select({ n: sql<number>`count(*)::int` }).from(income).where(eq(income.userId, userId));
+    return { expenses: exp.n, income: inc.n };
   }
 }
 

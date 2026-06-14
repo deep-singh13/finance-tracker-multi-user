@@ -31,30 +31,26 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
 
 // ── Register ─────────────────────────────────────────────────────────────────
 // Open only while zero users exist (creates first admin). Otherwise admin-only.
+// Bootstrap-only: this endpoint creates the FIRST account (the admin) while the
+// users table is empty, and logs them in. Once any user exists it is closed —
+// all further accounts are created by an admin via POST /api/admin/users.
 export async function handleRegister(req: Request, res: Response) {
   const parsed = credentialsSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ message: parsed.error.errors[0].message });
 
-  const userCount = await userStore.count();
-  const callerIsAdmin = (req.session as any).role === "admin";
-  if (userCount > 0 && !callerIsAdmin) {
+  if ((await userStore.count()) > 0) {
     return res.status(403).json({ message: "Registration is closed. Ask an admin to create your account." });
   }
 
-  const existing = await userStore.findByUsername(parsed.data.username);
-  if (existing) return res.status(409).json({ message: "Username already taken" });
-
+  // userStore.create makes the first user an admin (race-safe via advisory lock).
   const user = await userStore.create({ username: parsed.data.username, password: parsed.data.password });
 
-  if (userCount === 0) {
-    return req.session.regenerate((err) => {
-      if (err) return res.status(500).json({ message: "Session error" });
-      (req.session as any).userId = user.id;
-      (req.session as any).role = user.role;
-      req.session.save((e) => e ? res.status(500).json({ message: "Session error" }) : res.json({ ok: true, username: user.username, role: user.role }));
-    });
-  }
-  return res.status(201).json({ id: user.id, username: user.username, role: user.role });
+  return req.session.regenerate((err) => {
+    if (err) return res.status(500).json({ message: "Session error" });
+    (req.session as any).userId = user.id;
+    (req.session as any).role = user.role;
+    req.session.save((e) => e ? res.status(500).json({ message: "Session error" }) : res.json({ ok: true, username: user.username, role: user.role }));
+  });
 }
 
 // ── Login ────────────────────────────────────────────────────────────────────
