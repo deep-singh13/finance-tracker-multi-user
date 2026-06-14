@@ -8,7 +8,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ExpenseModal } from "./ExpenseModal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { GmailSyncButton } from "./GmailSyncButton";
 
 interface ExpenseListProps {
   expenses: ExpenseResponse[] | undefined;
@@ -143,7 +142,6 @@ export function ExpenseList({ expenses, isLoading }: ExpenseListProps) {
             className="pl-9 rounded-xl bg-card border-border/50"
           />
         </div>
-        <GmailSyncButton />
         <Button
           variant="outline"
           onClick={handleExportCSV}

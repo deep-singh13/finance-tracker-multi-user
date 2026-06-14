@@ -1,12 +1,11 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { format, isToday, parseISO, startOfWeek, isAfter, isSameMonth, subWeeks, subMonths, eachDayOfInterval, eachMonthOfInterval } from "date-fns";
-import { Plus, AlertTriangle, TrendingUp, TrendingDown, Minus, CalendarClock, ArrowUpRight, ArrowDownRight, Target, Eye, EyeOff, Mail } from "lucide-react";
+import { Plus, AlertTriangle, TrendingUp, TrendingDown, Minus, CalendarClock, ArrowUpRight, ArrowDownRight, Target, Eye, EyeOff } from "lucide-react";
 import { useExpenses, useBudget, useSetBudget } from "@/hooks/use-expenses";
 import { useIncome } from "@/hooks/use-income";
 import { useQuery } from "@tanstack/react-query";
 import { ExpenseModal } from "@/components/ExpenseModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { GmailSyncModal } from "@/components/GmailSyncModal";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -96,7 +95,6 @@ const CHART_COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EF4444", "#0
 
 export default function Dashboard() {
   const [isPrivate, setIsPrivate] = useState(false);
-  const [gmailOpen, setGmailOpen] = useState(false);
   const { data: expenses } = useExpenses();
   const { data: incomeList } = useIncome();
   const { data: subscriptions } = useQuery<Subscription[]>({
@@ -219,17 +217,6 @@ export default function Dashboard() {
               >
                 {isPrivate ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
-              {/* Gmail sync */}
-              <button
-                onClick={() => setGmailOpen(true)}
-                className="icon-btn w-9 h-9 bg-white/15 text-white border border-white/20"
-                style={{ transition: "background-color 150ms var(--ease-out), transform 120ms var(--ease-out)" }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(255,255,255,0.25)"}
-                onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(255,255,255,0.15)"}
-                aria-label="Sync Gmail"
-              >
-                <Mail className="w-4 h-4" />
-              </button>
               <ThemeToggle />
               <ExpenseModal>
                 <button
@@ -243,7 +230,6 @@ export default function Dashboard() {
                 </button>
               </ExpenseModal>
             </div>
-            <GmailSyncModal open={gmailOpen} onClose={() => setGmailOpen(false)} />
           </div>
 
           {/* Big number */}
