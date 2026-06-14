@@ -37,6 +37,24 @@ export const userStore = {
     });
   },
 
+  // Atomically create the very first user as admin. The empty-table check and the
+  // insert run inside one advisory-locked transaction, so the registration-closed
+  // gate cannot be raced: if any user already exists, this inserts nothing and
+  // returns null. Shares the lock id with create() so the two are mutually
+  // serialized.
+  async createInitialAdmin(input: CreateUserInput): Promise<User | null> {
+    const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);
+    return db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(4242424242)`);
+      const [{ n }] = await tx.select({ n: sql<number>`count(*)::int` }).from(users);
+      if (n !== 0) return null; // registration already closed — do not insert
+      const [user] = await tx.insert(users)
+        .values({ username: input.username, passwordHash, role: "admin" })
+        .returning();
+      return user;
+    });
+  },
+
   async findByUsername(username: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.username, username));
     return user;

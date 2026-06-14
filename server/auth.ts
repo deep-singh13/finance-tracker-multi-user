@@ -38,12 +38,13 @@ export async function handleRegister(req: Request, res: Response) {
   const parsed = credentialsSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ message: parsed.error.errors[0].message });
 
-  if ((await userStore.count()) > 0) {
+  // Atomic: creates the first user as admin, or returns null if a user already
+  // exists (registration closed). The check + insert share one locked transaction,
+  // so concurrent first-time registrations cannot both succeed.
+  const user = await userStore.createInitialAdmin({ username: parsed.data.username, password: parsed.data.password });
+  if (!user) {
     return res.status(403).json({ message: "Registration is closed. Ask an admin to create your account." });
   }
-
-  // userStore.create makes the first user an admin (race-safe via advisory lock).
-  const user = await userStore.create({ username: parsed.data.username, password: parsed.data.password });
 
   return req.session.regenerate((err) => {
     if (err) return res.status(500).json({ message: "Session error" });
