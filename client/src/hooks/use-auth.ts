@@ -39,7 +39,11 @@ export function useLogout() {
   const qc = useQueryClient();
   return async () => {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    // Drop all cached per-user data, then synchronously write the logged-out auth
+    // state. setQueryData notifies the mounted useAuth observer immediately, so the
+    // AuthGuard re-renders to the login screen without a manual refresh. (clear() +
+    // invalidate left the observer showing its last authenticated snapshot.)
     qc.clear();
-    qc.invalidateQueries({ queryKey: AUTH_KEY });
+    qc.setQueryData<AuthState>(AUTH_KEY, { authenticated: false, username: null, role: null, needsBootstrap: false });
   };
 }
