@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
-import MemoryStore from "memorystore";
+import connectPgSimple from "connect-pg-simple";
+import { pool } from "./db";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -20,11 +21,11 @@ declare module "http" {
 app.set("trust proxy", 1);
 
 // ── Session store ─────────────────────────────────────────────────────────────
-// memorystore: LRU memory store with automatic pruning of expired sessions.
-// Sessions are lost on server restart (deploy), which is fine for a single-user
-// personal app. Avoids connect-pg-simple's file-system dependency (table.sql)
-// that breaks when bundled with esbuild.
-const SessionStore = MemoryStore(session);
+// Postgres-backed sessions (connect-pg-simple) so logins survive restarts/deploys
+// and work across multiple processes — important now that the app is multi-user.
+// Reuses the app's pg pool; createTableIfMissing auto-provisions the session table
+// (no table.sql file dependency, so it bundles cleanly with esbuild).
+const PgStore = connectPgSimple(session);
 const isProduction = process.env.NODE_ENV === "production";
 
 if (isProduction && !process.env.SESSION_SECRET) {
@@ -34,8 +35,10 @@ if (isProduction && !process.env.SESSION_SECRET) {
 
 app.use(
   session({
-    store: new SessionStore({
-      checkPeriod: 24 * 60 * 60 * 1000, // prune expired entries every 24h
+    store: new PgStore({
+      pool,
+      tableName: "user_sessions",
+      createTableIfMissing: true,
     }),
     name: "sid",
     secret: process.env.SESSION_SECRET || "dev-secret-change-in-production",
