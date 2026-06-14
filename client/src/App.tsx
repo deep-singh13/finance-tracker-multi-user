@@ -11,9 +11,10 @@ import Investments from "@/pages/Investments";
 import Subscriptions from "@/pages/Subscriptions";
 import Income from "@/pages/Income";
 import Login from "@/pages/Login";
+import Admin from "@/pages/Admin";
 import { History } from "@/components/History";
 import { useAuth, useLogout } from "@/hooks/use-auth";
-import { LayoutDashboard, History as HistoryIcon, TrendingUp, RefreshCw, Wallet, LogOut } from "lucide-react";
+import { LayoutDashboard, History as HistoryIcon, TrendingUp, RefreshCw, Wallet, LogOut, Users } from "lucide-react";
 
 // Runs on every app load — creates expenses for active subscriptions whose
 // billing day has passed this month and haven't been billed yet.
@@ -30,7 +31,7 @@ function useSubscriptionBilling() {
   }, []);
 }
 
-function TabBar() {
+function TabBar({ isAdmin }: { isAdmin: boolean }) {
   const [location] = useLocation();
   const logout = useLogout();
 
@@ -40,6 +41,7 @@ function TabBar() {
     { href: "/investments",   label: "Invest",        icon: TrendingUp },
     { href: "/subscriptions", label: "Subs",          icon: RefreshCw },
     { href: "/history",       label: "History",       icon: HistoryIcon },
+    ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: Users }] : []),
   ];
 
   return (
@@ -90,6 +92,7 @@ function TabBar() {
 
 function Router() {
   useSubscriptionBilling();
+  const { role } = useAuth();
 
   return (
     <div className="pb-20">
@@ -99,17 +102,17 @@ function Router() {
         <Route path="/investments" component={Investments} />
         <Route path="/subscriptions" component={Subscriptions} />
         <Route path="/history" component={History} />
+        {role === "admin" && <Route path="/admin" component={Admin} />}
         <Route component={NotFound} />
       </Switch>
-      <TabBar />
+      <TabBar isAdmin={role === "admin"} />
     </div>
   );
 }
 
 // Shows a blank screen while checking auth, then Login or the app
 function AuthGuard() {
-  const { authenticated, isLoading } = useAuth();
-
+  const { authenticated, needsBootstrap, isLoading } = useAuth();
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -117,17 +120,9 @@ function AuthGuard() {
       </div>
     );
   }
-
   if (!authenticated) {
-    return (
-      <Login
-        onSuccess={() => {
-          queryClient.setQueryData(["/api/auth/me"], true);
-        }}
-      />
-    );
+    return <Login bootstrap={needsBootstrap} onSuccess={() => { queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] }); }} />;
   }
-
   return <Router />;
 }
 
