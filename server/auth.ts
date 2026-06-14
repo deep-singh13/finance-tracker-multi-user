@@ -1,69 +1,95 @@
-import bcrypt from "bcryptjs";
 import rateLimit from "express-rate-limit";
 import type { Request, Response, NextFunction } from "express";
+import { z } from "zod";
+import { userStore } from "./users";
 
-// ── Rate limiter ────────────────────────────────────────────────────────────
-// 5 attempts per 15 minutes per IP. With a 4-digit PIN (10,000 combos) this
-// means exhausting all combinations takes ~20 days — acceptable for personal use.
 export const loginRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
+  windowMs: 15 * 60 * 1000,
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true, // only count failed attempts
+  skipSuccessfulRequests: true,
   message: { message: "Too many attempts. Try again in 15 minutes." },
 });
 
-// ── Auth middleware ──────────────────────────────────────────────────────────
+const credentialsSchema = z.object({
+  username: z.string().trim().min(3).max(32).regex(/^[a-zA-Z0-9_.-]+$/, "Use letters, numbers, _ . -"),
+  password: z.string().min(8).max(128),
+});
+
+// ── Middleware ───────────────────────────────────────────────────────────────
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  if ((req.session as any).authenticated) return next();
+  const s = req.session as any;
+  if (s.userId) { req.userId = s.userId; req.userRole = s.role; return next(); }
   return res.status(401).json({ message: "Unauthorized" });
 }
 
-// ── Login handler ────────────────────────────────────────────────────────────
+export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if ((req.session as any).role === "admin") return next();
+  return res.status(403).json({ message: "Forbidden" });
+}
+
+// ── Register ─────────────────────────────────────────────────────────────────
+// Open only while zero users exist (creates first admin). Otherwise admin-only.
+export async function handleRegister(req: Request, res: Response) {
+  const parsed = credentialsSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ message: parsed.error.errors[0].message });
+
+  const userCount = await userStore.count();
+  const callerIsAdmin = (req.session as any).role === "admin";
+  if (userCount > 0 && !callerIsAdmin) {
+    return res.status(403).json({ message: "Registration is closed. Ask an admin to create your account." });
+  }
+
+  const existing = await userStore.findByUsername(parsed.data.username);
+  if (existing) return res.status(409).json({ message: "Username already taken" });
+
+  const user = await userStore.create({ username: parsed.data.username, password: parsed.data.password });
+
+  if (userCount === 0) {
+    return req.session.regenerate((err) => {
+      if (err) return res.status(500).json({ message: "Session error" });
+      (req.session as any).userId = user.id;
+      (req.session as any).role = user.role;
+      req.session.save((e) => e ? res.status(500).json({ message: "Session error" }) : res.json({ ok: true, username: user.username, role: user.role }));
+    });
+  }
+  return res.status(201).json({ id: user.id, username: user.username, role: user.role });
+}
+
+// ── Login ────────────────────────────────────────────────────────────────────
 export async function handleLogin(req: Request, res: Response) {
-  const { pin } = req.body as { pin?: string };
+  const parsed = credentialsSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(401).json({ message: "Incorrect username or password" });
 
-  // Validate: must be exactly 4 digits
-  if (!pin || !/^\d{4}$/.test(pin)) {
-    return res.status(401).json({ message: "Incorrect PIN" });
-  }
+  const user = await userStore.verify(parsed.data.username, parsed.data.password);
+  if (!user) return res.status(401).json({ message: "Incorrect username or password" });
 
-  const hash = process.env.AUTH_PIN_HASH;
-  if (!hash) {
-    console.error("AUTH_PIN_HASH env var is not set");
-    return res.status(503).json({ message: "Authentication not configured" });
-  }
-
-  // bcrypt compare — constant-time, safe against timing attacks
-  const match = await bcrypt.compare(pin, hash);
-  if (!match) {
-    // Generic message — don't reveal whether PIN format was wrong vs. wrong value
-    return res.status(401).json({ message: "Incorrect PIN" });
-  }
-
-  // Regenerate session to prevent session fixation attacks
   req.session.regenerate((err) => {
     if (err) return res.status(500).json({ message: "Session error" });
-    (req.session as any).authenticated = true;
-    req.session.save((saveErr) => {
-      if (saveErr) return res.status(500).json({ message: "Session error" });
-      return res.json({ ok: true });
-    });
+    (req.session as any).userId = user.id;
+    (req.session as any).role = user.role;
+    req.session.save((e) => e ? res.status(500).json({ message: "Session error" }) : res.json({ ok: true, username: user.username, role: user.role }));
   });
 }
 
-// ── Logout handler ───────────────────────────────────────────────────────────
+// ── Logout ───────────────────────────────────────────────────────────────────
 export function handleLogout(req: Request, res: Response) {
   req.session.destroy((err) => {
     if (err) console.error("Session destroy error:", err);
-    res.clearCookie("sid"); // matches the cookie name set in index.ts
+    res.clearCookie("sid");
     return res.json({ ok: true });
   });
 }
 
-// ── Me handler (auth check for client) ──────────────────────────────────────
-export function handleMe(req: Request, res: Response) {
-  if ((req.session as any).authenticated) return res.json({ authenticated: true });
-  return res.status(401).json({ authenticated: false });
+// ── Me ───────────────────────────────────────────────────────────────────────
+export async function handleMe(req: Request, res: Response) {
+  const s = req.session as any;
+  if (!s.userId) {
+    const needsBootstrap = (await userStore.count()) === 0;
+    return res.status(401).json({ authenticated: false, needsBootstrap });
+  }
+  const user = await userStore.findById(s.userId);
+  if (!user) { req.session.destroy(() => {}); return res.status(401).json({ authenticated: false, needsBootstrap: false }); }
+  return res.json({ authenticated: true, username: user.username, role: user.role });
 }
