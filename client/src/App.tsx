@@ -1,5 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Switch, Route, Link, Redirect, useLocation } from "wouter";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { ChangePasswordModal } from "@/components/ChangePasswordModal";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -14,7 +18,7 @@ import Login from "@/pages/Login";
 import Admin from "@/pages/Admin";
 import { History } from "@/components/History";
 import { useAuth, useLogout } from "@/hooks/use-auth";
-import { LayoutDashboard, History as HistoryIcon, TrendingUp, RefreshCw, Wallet, LogOut, Users } from "lucide-react";
+import { LayoutDashboard, History as HistoryIcon, TrendingUp, RefreshCw, Wallet, LogOut, Users, Settings, KeyRound } from "lucide-react";
 
 // Runs on every app load — creates expenses for active subscriptions whose
 // billing day has passed this month and haven't been billed yet.
@@ -34,6 +38,7 @@ function useSubscriptionBilling() {
 function TabBar({ isAdmin }: { isAdmin: boolean }) {
   const [location] = useLocation();
   const logout = useLogout();
+  const [pwOpen, setPwOpen] = useState(false);
 
   const tabs = [
     { href: "/",              label: "Overview",      icon: LayoutDashboard },
@@ -71,21 +76,36 @@ function TabBar({ isAdmin }: { isAdmin: boolean }) {
           </Link>
         );
       })}
-      <button
-        onClick={logout}
-        className="flex flex-col items-center gap-1 px-3 py-2 min-w-[52px] rounded-xl cursor-pointer group select-none"
-        style={{ WebkitTapHighlightColor: "transparent" }}
-        aria-label="Lock / Logout"
-      >
-        <span className="icon-btn w-9 h-9 text-muted-foreground"
-          style={{ transition: "background-color 150ms var(--ease-out), color 150ms var(--ease-out), transform 120ms var(--ease-out)" }}>
-          <LogOut className="w-[18px] h-[18px]" />
-        </span>
-        <span className="text-[9.5px] font-semibold tracking-wide text-muted-foreground"
-          style={{ transition: "color 150ms var(--ease-out)" }}>
-          Lock
-        </span>
-      </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="flex flex-col items-center gap-1 px-3 py-2 min-w-[52px] rounded-xl cursor-pointer group select-none"
+            style={{ WebkitTapHighlightColor: "transparent" }}
+            aria-label="Account"
+          >
+            <span className="icon-btn w-9 h-9 text-muted-foreground"
+              style={{ transition: "background-color 150ms var(--ease-out), color 150ms var(--ease-out), transform 120ms var(--ease-out)" }}>
+              <Settings className="w-[18px] h-[18px]" />
+            </span>
+            <span className="text-[9.5px] font-semibold tracking-wide text-muted-foreground"
+              style={{ transition: "color 150ms var(--ease-out)" }}>
+              Account
+            </span>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" side="top" className="mb-2">
+          <DropdownMenuItem onClick={() => setPwOpen(true)}>
+            <KeyRound className="w-4 h-4 mr-2" />
+            Change password
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={logout}>
+            <LogOut className="w-4 h-4 mr-2" />
+            Log out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <ChangePasswordModal open={pwOpen} onOpenChange={setPwOpen} />
     </nav>
   );
 }

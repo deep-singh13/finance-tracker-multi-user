@@ -39,4 +39,29 @@ describe("auth", () => {
     const res = await request(app).get("/api/expenses");
     expect(res.status).toBe(401);
   });
+
+  it("lets a logged-in user change their password", async () => {
+    await request(app).post("/api/auth/register").send({ username: "alice", password: "secret123" });
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ username: "alice", password: "secret123" });
+
+    // wrong current password is rejected
+    const bad = await agent.post("/api/auth/change-password").send({ currentPassword: "wrong1234", newPassword: "newpass123" });
+    expect(bad.status).toBe(400);
+
+    // correct current password succeeds
+    const ok = await agent.post("/api/auth/change-password").send({ currentPassword: "secret123", newPassword: "newpass123" });
+    expect(ok.status).toBe(204);
+
+    // old password no longer works; new one does
+    const relog = request.agent(app);
+    expect((await relog.post("/api/auth/login").send({ username: "alice", password: "secret123" })).status).toBe(401);
+    expect((await relog.post("/api/auth/login").send({ username: "alice", password: "newpass123" })).status).toBe(200);
+  });
+
+  it("rejects change-password without a session", async () => {
+    await request(app).post("/api/auth/register").send({ username: "alice", password: "secret123" });
+    const res = await request(app).post("/api/auth/change-password").send({ currentPassword: "secret123", newPassword: "newpass123" });
+    expect(res.status).toBe(401);
+  });
 });

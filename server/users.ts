@@ -78,6 +78,13 @@ export const userStore = {
     return user;
   },
 
+  // Verify a password for a known user id (used for self-service password change).
+  async verifyPassword(id: number, password: string): Promise<boolean> {
+    const user = await this.findById(id);
+    if (!user) { await bcrypt.compare(password, DUMMY_HASH); return false; }
+    return bcrypt.compare(password, user.passwordHash);
+  },
+
   async list(): Promise<User[]> {
     return db.select().from(users).orderBy(asc(users.username));
   },

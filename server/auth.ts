@@ -70,6 +70,27 @@ export async function handleLogin(req: Request, res: Response) {
   });
 }
 
+// ── Change password (self-service, requires an active session) ───────────────
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8).max(128),
+});
+
+export async function handleChangePassword(req: Request, res: Response) {
+  const parsed = changePasswordSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ message: parsed.error.errors[0].message });
+
+  const userId = (req.session as any).userId as number;
+  const ok = await userStore.verifyPassword(userId, parsed.data.currentPassword);
+  if (!ok) return res.status(400).json({ message: "Current password is incorrect" });
+  if (parsed.data.currentPassword === parsed.data.newPassword) {
+    return res.status(400).json({ message: "New password must be different from the current one" });
+  }
+
+  await userStore.setPassword(userId, parsed.data.newPassword);
+  return res.status(204).send();
+}
+
 // ── Logout ───────────────────────────────────────────────────────────────────
 export function handleLogout(req: Request, res: Response) {
   req.session.destroy((err) => {

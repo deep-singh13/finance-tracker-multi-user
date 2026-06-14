@@ -4,7 +4,8 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import {
-  requireAuth, requireAdmin, handleLogin, handleLogout, handleMe, handleRegister, loginRateLimiter,
+  requireAuth, requireAdmin, handleLogin, handleLogout, handleMe, handleRegister,
+  handleChangePassword, loginRateLimiter,
 } from "./auth";
 import { registerAdminRoutes } from "./admin";
 
@@ -17,6 +18,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   // ── Everything below requires a session ──
   app.use("/api", requireAuth);
+
+  // Self-service password change (any logged-in user).
+  app.post("/api/auth/change-password", handleChangePassword);
 
   // ── Admin ──
   registerAdminRoutes(app, requireAdmin);
