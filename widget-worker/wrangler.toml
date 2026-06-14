@@ -1,8 +1,0 @@
-name = "finance-widget"
-main = "src/index.ts"
-compatibility_date = "2024-09-23"
-compatibility_flags = ["nodejs_compat"]
-
-# Secrets (never commit values — set via `wrangler secret put`):
-#   wrangler secret put DATABASE_URL
-#   wrangler secret put WIDGET_API_KEY
