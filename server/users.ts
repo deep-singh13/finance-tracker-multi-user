@@ -43,6 +43,10 @@ export const userStore = {
   // returns null. Shares the lock id with create() so the two are mutually
   // serialized.
   async createInitialAdmin(input: CreateUserInput): Promise<User | null> {
+    // Cheap fail-closed reject: once any user exists, registration is closed, so
+    // return before spending CPU on bcrypt. The in-transaction recheck under the
+    // advisory lock below still guarantees atomicity against the bootstrap race.
+    if ((await this.count()) > 0) return null;
     const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);
     return db.transaction(async (tx) => {
       await tx.execute(sql`SELECT pg_advisory_xact_lock(4242424242)`);
