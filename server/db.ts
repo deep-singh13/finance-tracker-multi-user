@@ -16,9 +16,9 @@ if (!process.env.DATABASE_URL) {
 // Neon uses a CA-signed TLS cert; rejectUnauthorized: true prevents MITM attacks.
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: true,
-  },
+  ssl: (process.env.DATABASE_URL || "").includes("localhost") || (process.env.DATABASE_URL || "").includes("127.0.0.1")
+    ? false
+    : { rejectUnauthorized: true },
 });
 
 // Optional: log connection errors clearly
