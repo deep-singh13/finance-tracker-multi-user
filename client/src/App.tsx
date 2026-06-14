@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Switch, Route, Link, useLocation } from "wouter";
+import { Switch, Route, Link, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -102,7 +102,7 @@ function Router() {
         <Route path="/investments" component={Investments} />
         <Route path="/subscriptions" component={Subscriptions} />
         <Route path="/history" component={History} />
-        {role === "admin" && <Route path="/admin" component={Admin} />}
+        <Route path="/admin">{role === "admin" ? <Admin /> : <Redirect to="/" />}</Route>
         <Route component={NotFound} />
       </Switch>
       <TabBar isAdmin={role === "admin"} />
@@ -113,6 +113,7 @@ function Router() {
 // Shows a blank screen while checking auth, then Login or the app
 function AuthGuard() {
   const { authenticated, needsBootstrap, isLoading } = useAuth();
+  const [, navigate] = useLocation();
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -121,7 +122,18 @@ function AuthGuard() {
     );
   }
   if (!authenticated) {
-    return <Login bootstrap={needsBootstrap} onSuccess={() => { queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] }); }} />;
+    return (
+      <Login
+        bootstrap={needsBootstrap}
+        onSuccess={() => {
+          // Land on a known route — the login form renders regardless of the URL
+          // path, so without this the app would render whatever (possibly unknown)
+          // path was in the address bar and flash a 404 until the user navigates.
+          navigate("/");
+          queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        }}
+      />
+    );
   }
   return <Router />;
 }
