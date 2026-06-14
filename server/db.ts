@@ -13,12 +13,23 @@ if (!process.env.DATABASE_URL) {
   process.exit(1); // safer exit than throwing immediately
 }
 
-// Neon uses a CA-signed TLS cert; rejectUnauthorized: true prevents MITM attacks.
+// SSL is required for hosted Postgres (Neon) — rejectUnauthorized: true prevents
+// MITM. It's disabled only for a true local Postgres host. We parse the hostname
+// rather than substring-matching the URL, so a remote host that merely contains
+// "localhost" in a query param or password cannot trick us into dropping TLS.
+function resolvePgSsl(connectionString: string): false | { rejectUnauthorized: true } {
+  try {
+    const host = new URL(connectionString).hostname;
+    if (host === "localhost" || host === "127.0.0.1" || host === "::1") return false;
+  } catch {
+    // Unparseable URL — fail safe to TLS on.
+  }
+  return { rejectUnauthorized: true };
+}
+
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: (process.env.DATABASE_URL || "").includes("localhost") || (process.env.DATABASE_URL || "").includes("127.0.0.1")
-    ? false
-    : { rejectUnauthorized: true },
+  ssl: resolvePgSsl(process.env.DATABASE_URL!),
 });
 
 // Optional: log connection errors clearly

@@ -5,7 +5,15 @@ import { eq, sql, asc } from "drizzle-orm";
 
 const SALT_ROUNDS = 10;
 
-export interface CreateUserInput { username: string; password: string; role?: "user" | "admin"; }
+// Precomputed hash of a throwaway value. Compared against when a username is not
+// found so login takes the same time whether or not the user exists — closing a
+// timing oracle that would otherwise reveal valid usernames.
+const DUMMY_HASH = bcrypt.hashSync("invalid-password-placeholder", SALT_ROUNDS);
+
+// Role is never accepted from the caller (no mass-assignment). The first user
+// ever created becomes admin; everyone else is a normal user. Promotion to admin
+// happens only via setRole, which is reachable only from admin-only routes.
+export interface CreateUserInput { username: string; password: string; }
 
 export const userStore = {
   async count(): Promise<number> {
@@ -15,11 +23,18 @@ export const userStore = {
 
   async create(input: CreateUserInput): Promise<User> {
     const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);
-    const role = input.role ?? ((await this.count()) === 0 ? "admin" : "user");
-    const [user] = await db.insert(users)
-      .values({ username: input.username, passwordHash, role })
-      .returning();
-    return user;
+    // Serialize concurrent creates with a transaction-scoped advisory lock so the
+    // "first user is admin" decision and the insert are atomic — two simultaneous
+    // registrations can't both read count()===0 and both become admin (TOCTOU).
+    return db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(4242424242)`);
+      const [{ n }] = await tx.select({ n: sql<number>`count(*)::int` }).from(users);
+      const role = n === 0 ? "admin" : "user";
+      const [user] = await tx.insert(users)
+        .values({ username: input.username, passwordHash, role })
+        .returning();
+      return user;
+    });
   },
 
   async findByUsername(username: string): Promise<User | undefined> {
@@ -34,7 +49,7 @@ export const userStore = {
 
   async verify(username: string, password: string): Promise<User | null> {
     const user = await this.findByUsername(username);
-    if (!user) { await bcrypt.compare(password, "$2a$10$invalidinvalidinvalidinvalidinvalidinv"); return null; }
+    if (!user) { await bcrypt.compare(password, DUMMY_HASH); return null; }
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) return null;
     await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
