@@ -8,6 +8,7 @@ import {
   handleChangePassword, loginRateLimiter,
 } from "./auth";
 import { registerAdminRoutes } from "./admin";
+import { registerImportRoutes } from "./import/router";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   // ── Auth (public) ──
@@ -24,6 +25,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   // ── Admin ──
   registerAdminRoutes(app, requireAdmin);
+
+  // ── Import ──
+  registerImportRoutes(app, requireAuth);
 
   const uid = (req: Request) => req.userId!;
 
