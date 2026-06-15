@@ -1,3 +1,4 @@
+// @ts-ignore — pdf-parse is CJS; ESM type entry lacks a default export under moduleResolution:bundler
 import pdfParse from 'pdf-parse';
 import type { RawTransaction } from '@shared/import';
 
