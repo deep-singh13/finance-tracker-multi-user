@@ -1,5 +1,3 @@
-// @ts-ignore — pdfjs-dist ESM entry; bundler resolves correctly at runtime
-import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { RawTransaction } from '@shared/import';
 
 interface TextItem { x: number; y: number; str: string; page: number }
@@ -10,6 +8,10 @@ const DATE_RE   = /^(?:\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}[\/\-]\d{2}[\/\-]\
 const AMOUNT_RE = /^\d{1,3}(?:,\d{3})*\.\d{2}$/;
 
 async function extractItems(buffer: Buffer): Promise<TextItem[]> {
+  // Dynamic import keeps pdfjs-dist external (not bundled to CJS) so import.meta.url
+  // inside pdfjs-dist resolves correctly at runtime on the production server.
+  // @ts-ignore — ESM entry; resolved correctly by Node.js dynamic import at runtime
+  const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs');
   const doc = await getDocument({ data: new Uint8Array(buffer) }).promise;
   const out: TextItem[] = [];
   for (let p = 1; p <= doc.numPages; p++) {
