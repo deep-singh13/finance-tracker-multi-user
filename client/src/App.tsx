@@ -18,7 +18,8 @@ import Login from "@/pages/Login";
 import Admin from "@/pages/Admin";
 import { History } from "@/components/History";
 import { useAuth, useLogout } from "@/hooks/use-auth";
-import { LayoutDashboard, History as HistoryIcon, TrendingUp, RefreshCw, Wallet, LogOut, Users, Settings, KeyRound } from "lucide-react";
+import { LayoutDashboard, History as HistoryIcon, TrendingUp, RefreshCw, Wallet, LogOut, Users, Settings, KeyRound, Upload } from "lucide-react";
+import Import from "@/pages/Import";
 
 // Runs on every app load — creates expenses for active subscriptions whose
 // billing day has passed this month and haven't been billed yet.
@@ -46,6 +47,7 @@ function TabBar({ isAdmin }: { isAdmin: boolean }) {
     { href: "/investments",   label: "Invest",        icon: TrendingUp },
     { href: "/subscriptions", label: "Subs",          icon: RefreshCw },
     { href: "/history",       label: "History",       icon: HistoryIcon },
+    { href: "/import",        label: "Import",        icon: Upload },
     ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: Users }] : []),
   ];
 
@@ -122,6 +124,7 @@ function Router() {
         <Route path="/investments" component={Investments} />
         <Route path="/subscriptions" component={Subscriptions} />
         <Route path="/history" component={History} />
+        <Route path="/import" component={Import} />
         <Route path="/admin">{role === "admin" ? <Admin /> : <Redirect to="/" />}</Route>
         <Route component={NotFound} />
       </Switch>
