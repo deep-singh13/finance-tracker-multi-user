@@ -58,8 +58,11 @@ export function parseCSV(text: string): RawTransaction[] {
       if (!raw) continue;
       amount = parseAmount(raw);
     } else {
-      const d = debitIdx  !== -1 && cols[debitIdx]?.trim()  ? parseAmount(cols[debitIdx].trim())  : 0;
-      const c = creditIdx !== -1 && cols[creditIdx]?.trim() ? parseAmount(cols[creditIdx].trim()) : 0;
+      const debitRaw  = debitIdx  !== -1 ? cols[debitIdx]?.trim()  : '';
+      const creditRaw = creditIdx !== -1 ? cols[creditIdx]?.trim() : '';
+      if (!debitRaw && !creditRaw) continue;
+      const d = debitRaw  ? parseAmount(debitRaw)  : 0;
+      const c = creditRaw ? parseAmount(creditRaw) : 0;
       amount = c - d;
     }
     if (isNaN(amount)) continue;

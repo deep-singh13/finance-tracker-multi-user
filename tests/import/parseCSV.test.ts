@@ -61,4 +61,15 @@ describe('parseCSV', () => {
     const csv = 'Date,Description,Amount\n';
     expect(() => parseCSV(csv)).toThrow(/column layout/i);
   });
+
+  it('skips debit/credit rows where both fields are empty', () => {
+    const csv = [
+      'Date,Description,Debit,Credit',
+      '2026-05-01,Balance Forward,,',
+      '2026-05-02,Uber Eats,12.50,',
+    ].join('\n');
+    const result = parseCSV(csv);
+    expect(result).toHaveLength(1);
+    expect(result[0].description).toBe('Uber Eats');
+  });
 });
